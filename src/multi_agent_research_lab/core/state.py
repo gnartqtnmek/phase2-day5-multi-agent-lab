@@ -25,10 +25,31 @@ class ResearchState(BaseModel):
     agent_results: list[AgentResult] = Field(default_factory=list)
     trace: list[dict[str, Any]] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
+    next_route: str | None = None
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    estimated_cost_usd: float | None = None
+    started_at: float | None = None
+    completed_at: float | None = None
 
     def record_route(self, route: str) -> None:
         self.route_history.append(route)
+        self.next_route = route
         self.iteration += 1
 
     def add_trace_event(self, name: str, payload: dict[str, Any]) -> None:
         self.trace.append({"name": name, "payload": payload})
+
+    def add_usage(
+        self,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        cost_usd: float | None = None,
+    ) -> None:
+        if input_tokens is not None:
+            self.total_input_tokens += input_tokens
+        if output_tokens is not None:
+            self.total_output_tokens += output_tokens
+        if cost_usd is not None:
+            current_cost = self.estimated_cost_usd or 0.0
+            self.estimated_cost_usd = current_cost + cost_usd
